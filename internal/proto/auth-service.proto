@@ -1,0 +1,198 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/linkup/auth/pb;authpb";
+
+import "google/protobuf/timestamp.proto";
+
+// Основной сервис аутентификации
+service AuthService {
+  // Регистрация нового пользователя
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Вход в систему
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // Обновление токена
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+
+  // Выход (инвалидация токена)
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+
+  // Валидация токена (для других сервисов)
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  // Подтверждение email
+  rpc ConfirmEmail(ConfirmEmailRequest) returns (ConfirmEmailResponse);
+
+  // Запрос сброса пароля
+  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
+
+  // Сброс пароля
+  rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse);
+
+  // Изменение пароля (для авторизованных пользователей)
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+
+  // Изменение email
+  rpc ChangeEmail(ChangeEmailRequest) returns (ChangeEmailResponse);
+
+  // Получение информации о пользователе (только auth данные)
+  rpc GetAuthUser(GetAuthUserRequest) returns (GetAuthUserResponse);
+
+  // Деактивация пользователя
+  rpc DeactivateUser(DeactivateUserRequest) returns (DeactivateUserResponse);
+}
+
+// ============== Messages ==============
+
+message RegisterRequest {
+  string login = 1;
+  string email = 2;
+  string password = 3;
+  string full_name = 4;
+}
+
+message RegisterResponse {
+  string user_id = 1;
+  string message = 2;
+  bool email_confirmation_required = 3;
+}
+
+message LoginRequest {
+  string login_or_email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+  AuthUserInfo user = 4;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+}
+
+message LogoutRequest {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message LogoutResponse {
+  bool success = 1;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  repeated string permissions = 4;
+}
+
+message ConfirmEmailRequest {
+  string token = 1;
+}
+
+message ConfirmEmailResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message RequestPasswordResetRequest {
+  string email = 1;
+}
+
+message RequestPasswordResetResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ResetPasswordRequest {
+  string token = 1;
+  string new_password = 2;
+}
+
+message ResetPasswordResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ChangePasswordRequest {
+  string user_id = 1;
+  string current_password = 2;
+  string new_password = 3;
+}
+
+message ChangePasswordResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ChangeEmailRequest {
+  string user_id = 1;
+  string new_email = 2;
+  string password = 3;
+}
+
+message ChangeEmailResponse {
+  bool success = 1;
+  string message = 2;
+  bool confirmation_required = 3;
+}
+
+message GetAuthUserRequest {
+  string user_id = 1;
+}
+
+message GetAuthUserResponse {
+  AuthUserInfo user = 1;
+}
+
+message DeactivateUserRequest {
+  string user_id = 1;
+  string reason = 2;
+}
+
+message DeactivateUserResponse {
+  bool success = 1;
+}
+
+// ============== Common Types ==============
+
+message AuthUserInfo {
+  string id = 1;
+  string login = 2;
+  string email = 3;
+  bool is_active = 4;
+  bool email_confirmed = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp last_login_at = 7;
+}
+
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_INVALID_CREDENTIALS = 1;
+  ERROR_CODE_USER_NOT_FOUND = 2;
+  ERROR_CODE_USER_ALREADY_EXISTS = 3;
+  ERROR_CODE_INVALID_TOKEN = 4;
+  ERROR_CODE_TOKEN_EXPIRED = 5;
+  ERROR_CODE_EMAIL_NOT_CONFIRMED = 6;
+  ERROR_CODE_USER_DEACTIVATED = 7;
+  ERROR_CODE_WEAK_PASSWORD = 8;
+  ERROR_CODE_INVALID_EMAIL = 9;
+  ERROR_CODE_TOO_MANY_ATTEMPTS = 10;
+}
